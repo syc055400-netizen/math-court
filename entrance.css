@@ -1,0 +1,82 @@
+.court-entrance {
+  position: fixed; inset: 0; z-index: 10000; overflow: hidden;
+  color: #fff0cd; isolation: isolate; font-family: 'NeoDunggeunmo Pro', 'DungGeunMo', monospace;
+}
+.entrance-darkness { position: absolute; inset: 0; background: #090b09; }
+.entrance-portal { position: absolute; inset: -2px; perspective: 1400px; }
+.entrance-door {
+  position: absolute; top: 0; bottom: 0; width: 50%;
+  background: repeating-linear-gradient(90deg, transparent 0 17px, #120d0840 18px 21px, transparent 22px 60px), repeating-linear-gradient(0deg, #56331e 0 7px, #4c2d1b 8px 10px, #5b3821 11px 18px);
+  box-shadow: inset 0 0 0 8px #160f09, inset 0 0 0 12px #ad7e3a, inset 0 0 0 17px #2a1d12, inset 0 0 50px 12px #140d0a;
+  backface-visibility: hidden; will-change: transform;
+}
+.entrance-door--left { left: 0; transform-origin: left center; }
+.entrance-door--right { right: 0; transform-origin: right center; }
+.door-panel {
+  position: absolute; left: 12%; right: 12%; display: block;
+  background: linear-gradient(90deg, #1b291e, #304334 40%, #23362a 75%, #18271d);
+  border: 6px solid #b3894c;
+  box-shadow: 0 0 0 4px #261d13, inset 0 0 0 4px #101c15, inset 0 0 0 7px #536247, 5px 5px 0 #21170e;
+}
+.door-panel--top { top: 13%; height: 42%; }
+.door-panel--bottom { top: 63%; bottom: 11%; }
+.door-panel::before, .door-panel::after {
+  content: ''; position: absolute; width: 11px; height: 11px; background: #bb9555;
+  box-shadow: 4px 4px #4b3820; transform: rotate(45deg);
+}
+.door-panel::before { top: 13px; left: 13px; }
+.door-panel::after { bottom: 13px; right: 13px; }
+.door-handle {
+  position: absolute; top: 52%; width: 18px; height: 70px; display: block;
+  background: linear-gradient(90deg, #674520 0 20%, #e5bc68 20% 55%, #a47a35 55% 80%, #412a14 80%);
+  border: 3px solid #2d2014; box-shadow: 0 -9px 0 -1px #bd9146, 0 9px 0 -1px #bd9146, 5px 4px 0 #17120d;
+}
+.entrance-door--left .door-handle { right: 5%; }
+.entrance-door--right .door-handle { left: 5%; }
+.entrance-light {
+  position: absolute; width: 5px; height: 100%; top: 0; left: calc(50% - 2px);
+  background: #ffebbb; box-shadow: 0 0 28px 9px #f6d79d80; opacity: 0;
+}
+.entrance-letterbox { position: absolute; left: 0; right: 0; height: 10vh; background: #080b09; z-index: 3; }
+.entrance-letterbox--top { top: 0; }
+.entrance-letterbox--bottom { bottom: 0; }
+.entrance-caption {
+  position: absolute; top: 30%; left: 50%; transform: translateX(-50%); width: min(90%, 850px);
+  text-align: center; text-shadow: 3px 3px #0c110d, -1px -1px #0c110d;
+}
+.entrance-kicker { display: block; margin-bottom: 18px; font-size: clamp(14px, 2vw, 21px); letter-spacing: .22em; color: #f4c877; }
+.entrance-case { display: block; font-size: clamp(26px, 4.4vw, 54px); line-height: 1.45; font-weight: 400; text-wrap: balance; }
+.entrance-ready { display: block; margin-top: 20px; font-size: clamp(14px, 1.9vw, 20px); color: #e7d8b4; }
+.entrance-skip {
+  position: absolute; z-index: 5; right: 24px; bottom: 22px; padding: 8px 16px;
+  background: #14271f; border: 2px solid #b18c50; box-shadow: 3px 3px #050b07;
+  color: #f8e3b7; font-family: inherit; font-size: 16px; cursor: pointer;
+}
+.entrance-skip:hover { background: #31513d; }
+.entrance-skip:focus-visible { outline: 3px solid #fff0c0; outline-offset: 4px; }
+.entrance-skip span { margin-left: 12px; }
+.is-opening .entrance-darkness { animation: entrance-dark 2.8s both; }
+.is-opening .entrance-door--left { animation: entrance-left 2.8s cubic-bezier(.3,.02,.23,1) both; }
+.is-opening .entrance-door--right { animation: entrance-right 2.8s cubic-bezier(.3,.02,.23,1) both; }
+.is-opening .entrance-light { animation: entrance-beam 2.8s both; }
+.is-opening .entrance-caption { animation: entrance-caption 2.8s both; }
+.is-opening .entrance-letterbox--top { animation: entrance-top 2.8s both; }
+.is-opening .entrance-letterbox--bottom { animation: entrance-bottom 2.8s both; }
+@keyframes entrance-left { 0%, 26% { transform: rotateY(0); } 85%, 100% { transform: rotateY(-108deg); } }
+@keyframes entrance-right { 0%, 26% { transform: rotateY(0); } 85%, 100% { transform: rotateY(108deg); } }
+@keyframes entrance-dark { 0%, 28% { opacity: 1; } 57%, 100% { opacity: 0; } }
+@keyframes entrance-beam { 0%, 22% { opacity: 0; transform: scaleX(1); } 32% { opacity: .8; } 59%, 100% { opacity: 0; transform: scaleX(36); } }
+@keyframes entrance-caption { 0% { opacity: 0; translate: 0 10px; } 13%, 37% { opacity: 1; translate: 0 0; } 65%, 100% { opacity: 0; translate: 0 -8px; } }
+@keyframes entrance-top { 0%, 68% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+@keyframes entrance-bottom { 0%, 68% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+@media (max-width: 600px) {
+  .door-panel { left: 14%; right: 14%; border-width: 4px; }
+  .entrance-caption { top: 33%; }
+  .door-handle { width: 13px; height: 55px; }
+  .entrance-skip { right: 16px; bottom: 16px; font-size: 14px; }
+}
+.court-entrance--reduced .entrance-portal, .court-entrance--reduced .entrance-caption { display: none; }
+.court-entrance--reduced { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .court-entrance * { animation: none !important; }
+}

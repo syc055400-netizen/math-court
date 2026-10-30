@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#153c33">
+  <meta name="description" content="미적분Ⅰ 풀이의 오류를 찾아, 증거로 반박하고 논리를 복구하는 수학 추리 게임. 첫 튜토리얼부터 6개의 사건까지.">
+  <meta property="og:title" content="오답법정 — 모든 주장에는 증거가 필요하다">
+  <meta property="og:description" content="미적분Ⅰ 수학 추리 게임. 오류 지목, 증거 검증, 반론 검토, 논리 복구.">
+  <meta property="og:type" content="website">
+  <title>오답법정 · 미적분Ⅰ</title>
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  
+  
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./entrance.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="#home" aria-label="오답법정 홈"><span class="brand-mark" aria-hidden="true"><img src="./favicon.svg" width="32" height="32" alt=""></span><span>오답법정 <small class="brand-sub">미적분Ⅰ</small></span></a>
+    <div class="header-actions"><button class="btn ghost small" type="button" id="help-button">게임 안내</button><button class="btn ghost small" type="button" id="sound-button" aria-pressed="false">소리 꺼짐</button></div>
+  </header>
+  <main id="app" class="app-shell"></main>
+  <footer class="app-footer"><span>오답법정 · 논리를 읽는 힘</span><span>학습 기록은 이 기기의 브라우저에 저장돼요.</span><a href="https://github.com/syc055400-netizen/math-court" target="_blank" rel="noopener noreferrer">GitHub</a></footer>
+  <div id="dialog-root"></div><div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <noscript>오답법정을 플레이하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
