@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { tutorial, cases } from './cases.js';
 import { evidenceGraph } from './graphs.js';
+import katex from './katex.mjs';
 
 // This manifest records the manually reviewed scope and first invalid inference.
 // A content change must deliberately update the review, not silently add a topic.
@@ -88,4 +89,25 @@ for (const c of all) {
   }
 }
 assert.equal(evidenceGraph('unknown-case'), '');
+// Validate every authored formula, including explanations revealed after a choice.
+let formulaCount = 0;
+function checkMath(value) {
+  if (typeof value === 'string') {
+    const formulas = [...value.matchAll(/\\\(([\s\S]*?)\\\)/g)];
+    const remainder = value.replace(/\\\(([\s\S]*?)\\\)/g, '');
+    assert.doesNotMatch(remainder, /\\[()]/, 'Math delimiters must be paired');
+    for (const [, tex] of formulas) {
+      katex.renderToString(tex, { throwOnError: true, strict: 'error', trust: false });
+      formulaCount++;
+    }
+  } else if (value && typeof value === 'object') {
+    Object.values(value).forEach(checkMath);
+  }
+}
+checkMath(all);
+for (const c of all) {
+  checkMath(evidenceGraph(c.id).replaceAll('&gt;', '>').replaceAll('&lt;', '<')
+    .replaceAll('&amp;', '&').replaceAll('&#39;', "'"));
+}
 console.log(`PASS: ${all.length} reviewed Calculus I cases, ${groups} single-answer groups, ${graphCount} accessible SVG evidence graphs.`);
+console.log(`PASS: ${formulaCount} LaTeX expressions parse without errors.`);

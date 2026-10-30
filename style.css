@@ -150,3 +150,8 @@ button,a{touch-action:manipulation}
  .game-actions{margin-top:14px;padding-top:13px}.game-actions .btn{min-height:43px;padding-top:10px;padding-bottom:10px;font-size:18px}
  .dossier-tab{padding:9px;font-size:19px}.dossier-inner{padding:16px 18px}.condition-list{font-size:15px;line-height:1.75}.dossier-divider{margin:14px 0}.record-steps{margin-top:16px}.dossier-note{font-size:12px}
 }
+
+/* Keep game typography intact while mathematical expressions use proper notation. */
+.katex{font-size:1.08em;line-height:1.4;text-indent:0;text-shadow:none;letter-spacing:normal;overflow-wrap:normal;word-break:normal}
+.katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:3px 0}
+.graph-math .katex{font-size:1em}

@@ -16,3 +16,7 @@
 
 ## 자산
 법정 배경은 이 프로젝트를 위해 생성했습니다. Neo둥근모 Pro 글꼴은 SIL Open Font License 1.1입니다. 전문은 FONT-LICENSE.txt를 확인하세요.
+
+## 수식 표시
+
+문제·선택지·해설·그래프의 수식은 LaTeX로 작성하고 KaTeX 0.16.22로 표시합니다. 렌더러와 수식 글꼴을 함께 제공하므로 외부 CDN 연결이 필요하지 않습니다. KaTeX의 MIT 라이선스는 `KATEX-LICENSE.txt`에 있습니다.
