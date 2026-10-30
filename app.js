@@ -1,5 +1,5 @@
-import { tutorial, cases } from './cases.js';
-import { evidenceGraph } from './graphs.js';
+import { tutorial, cases } from './cases.js?v=20261030-latex';
+import { evidenceGraph } from './graphs.js?v=20261030-latex';
 import { enterCourt } from './entrance.js';
 import { typesetMath } from './math.js';
 
