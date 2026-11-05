@@ -1,0 +1,17 @@
+/* Exam-paper typography inside the pixel game's reading surfaces. */
+@font-face{font-family:'Court Myeongjo';src:url('./court-myeongjo.woff') format('woff');font-display:swap;font-weight:400}
+:root{--exam-text:'Court Myeongjo','Batang','Noto Serif CJK KR','Times New Roman',serif}
+.condition-list,.claim-text,.record-steps li,.choice-body,.stage-quote,.opening-statement,.testimony-line p,.hearing-transcript .math,.takeaway p,.feedback,.exam-graph figcaption{font-family:var(--exam-text);font-weight:400;color:#171717;letter-spacing:0;word-break:keep-all}
+.condition-list{font-size:17px;line-height:1.95}.claim-text{font-size:16px;line-height:1.95}.record-steps li{font-size:15px;line-height:2}
+.choice-body{font-size:17px;line-height:1.9}.choice-detail{font:14px/1.9 var(--exam-text);color:#48443e;margin-top:8px}.stage-quote{font-size:17px;line-height:2;background:#fff;border-left:3px solid #37322a}
+.game-paper{background:#fffdf7}.opening-statement{font-size:18px;line-height:2;background:#fff;border:1px solid #766c5c;padding:19px 23px}.opening-statement li+li{margin-top:10px}
+.testimony-line{background:#fff;border:1px solid #534a3c;box-shadow:0 3px #dfd6c4;padding:24px;min-height:142px}.testimony-line:after{border-bottom-color:#534a3c}.testimony-line p{font-size:21px;line-height:2}.testimony-order{font-family:'Times New Roman',serif;color:#5a5043;font-size:19px}
+.choice{background:#fff;border:1px solid #b2a38b;box-shadow:0 2px #dfd4be;padding:13px 15px}.choice:hover:not(:disabled){background:#fffdf3}.choice.selected{background:#fff3d6;border-color:#9e7042;box-shadow:0 2px #c9b07e}.choice.correct{background:#f1f5e9;border-color:#637653;box-shadow:0 2px #bdc7aa}
+.hearing-transcript li>button{background:#fffdf7}.hearing-transcript .math{font-size:15px;line-height:1.95}.takeaway p{font-size:17px;line-height:2}.feedback{font-size:16px;line-height:2}
+.choice-body,.testimony-line p,.opening-statement li,.opening-claim p,.condition-list li,.claim-text,.record-steps li,.hearing-transcript .math,.stage-quote,.feedback,.takeaway p{min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;padding-top:3px;padding-bottom:3px;scrollbar-width:thin;scrollbar-color:#837b6c #eeeae1}
+.exam-graph{background:#fff!important;border-radius:0!important;box-shadow:none!important}.exam-graph svg{background:#fff;image-rendering:auto}.exam-graph figcaption{font-size:15px!important;line-height:1.9!important;color:#333!important}
+.graph-math{font-family:var(--exam-text)}
+@media(max-width:760px){.condition-list,.choice-body,.opening-statement{font-size:17px}.testimony-line p{font-size:20px}.claim-text,.stage-quote{font-size:16px}.testimony-line{padding:22px 16px}.hearing-transcript .math{font-size:15px}}
+@media(max-width:450px){.condition-list,.choice-body,.opening-statement{font-size:16px}.choice-detail{font-size:13px}.testimony-line p{font-size:19px}.testimony-line{padding:20px 12px}.claim-text,.stage-quote{font-size:15px}.feedback,.takeaway p{font-size:15px}.opening-statement{padding:16px}.choice{padding:12px 10px}}
+
+.exam-graph .graph-math .katex{background:#fff;padding:0 2px}

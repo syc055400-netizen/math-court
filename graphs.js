@@ -1,179 +1,82 @@
-// Exact, dependency-free SVGs for the evidence reveal.
-// The only exported API returns trusted, locally authored HTML.
-const INK = '#355e45';
-const GRID = '#d0c7b4';
-const TEXT = '#4f594a';
-const PAPER = '#fffcf5';
+// Exam-style mathematical evidence diagrams. All curves use exact math coordinates.
+// Monochrome axes, sparse labels, and only the auxiliary lines needed by the proof.
+const INK = '#181818';
+const PAPER = '#ffffff';
+const m = String.raw;
+const e = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const n = value => Number(value.toFixed(3));
 
-const escapeText = (value) => String(value).replace(/[&<>"']/g, (char) => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-}[char]));
-const n = (value) => Number(value.toFixed(3));
-
-function makePlot(xMin, xMax, yMin, yMax) {
-  const left = 58;
-  const right = 480;
-  const top = 38;
-  const bottom = 204;
-  return {
-    left, right, top, bottom, xMin, xMax, yMin, yMax,
-    X: (x) => left + (x - xMin) / (xMax - xMin) * (right - left),
-    Y: (y) => bottom - (y - yMin) / (yMax - yMin) * (bottom - top)
-  };
+function plot(xMin,xMax,yMin,yMax,{left=88,right=430,top=30,bottom=204}={}) {
+  return {left,right,top,bottom,xMin,xMax,yMin,yMax,
+    X:x=>left+(x-xMin)/(xMax-xMin)*(right-left),
+    Y:y=>bottom-(y-yMin)/(yMax-yMin)*(bottom-top)};
+}
+function line(x1,y1,x2,y2,{dashed=false,width=1}={}) {
+  return `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" stroke="${INK}" stroke-width="${width}"${dashed?' stroke-dasharray="4 4"':''}/>`;
+}
+// Labels stay real LaTeX, shared with the problem renderer, rather than pixel text.
+function label(x,y,formula,anchor='start',width=120,size=17) {
+  const left=anchor==='middle'?x-width/2:anchor==='end'?x-width:x;
+  const align=anchor==='middle'?'center':anchor==='end'?'right':'left';
+  return `<foreignObject x="${n(left)}" y="${n(y-20)}" width="${width}" height="42" style="overflow:visible"><div xmlns="http://www.w3.org/1999/xhtml" class="graph-math" style="color:${INK};font-family:'STIX Two Text','Times New Roman',serif;font-size:${size}px;line-height:1.45;text-align:${align};white-space:nowrap">${e(formula)}</div></foreignObject>`;
+}
+function tickFormula(value) {return `\\(${String(value).replace('-','-')}\\)`;}
+function axes(p,xTicks=[],yTicks=[]) {
+  const x0=p.X(0),y0=p.Y(0),right=p.right+10,top=p.top-9;
+  let out=line(p.left-3,y0,right,y0)+line(x0,p.bottom+5,x0,top);
+  out+=`<path d="M ${n(right-6)} ${n(y0-3)} L ${n(right)} ${n(y0)} L ${n(right-6)} ${n(y0+3)} M ${n(x0-3)} ${n(top+6)} L ${n(x0)} ${n(top)} L ${n(x0+3)} ${n(top+6)}" fill="none" stroke="${INK}" stroke-width="1"/>`;
+  out+=label(right+9,y0+7,m`\(x\)`,'start',25,17)+label(x0+10,top+3,m`\(y\)`,'start',25,17)+label(x0-9,y0+22,m`\(O\)`,'end',30,16);
+  for(const tick of xTicks){const [value,formula]=Array.isArray(tick)?tick:[tick,tickFormula(tick)];if(value===0)continue;const x=p.X(value);out+=line(x,y0-3,x,y0+3)+label(x,y0+24,formula,'middle',62,16);}
+  for(const tick of yTicks){const [value,formula]=Array.isArray(tick)?tick:[tick,tickFormula(tick)];if(value===0)continue;const y=p.Y(value);out+=line(x0-3,y,x0+3,y)+label(x0-10,y+8,formula,'end',65,16);}
+  return out;
+}
+function curve(p,fn,start,end,segments=180) {
+  const points=[];
+  for(let i=0;i<=segments;i++){const x=start+(end-start)*i/segments;points.push(`${i?'L':'M'} ${n(p.X(x))} ${n(p.Y(fn(x)))}`);}
+  return `<path d="${points.join(' ')}" fill="none" stroke="${INK}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function point(p,x,y,open=false) {
+  return `<circle cx="${n(p.X(x))}" cy="${n(p.Y(y))}" r="${open?4.4:3}" fill="${open?PAPER:INK}" stroke="${INK}" stroke-width="1.5"/>`;
+}
+function guide(p,x,y,{horizontal=true,vertical=true}={}) {
+  return (vertical?line(p.X(x),p.Y(0),p.X(x),p.Y(y),{dashed:true}):'')+(horizontal?line(p.X(0),p.Y(y),p.X(x),p.Y(y),{dashed:true}):'');
+}
+function wrap(id,title,description,body,caption) {
+  return `<figure class="evidence-graph exam-graph" style="margin:20px 0 2px;padding:20px 16px 14px;border:1px solid #c6c6c6;border-radius:0;background:${PAPER}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 240" width="100%" role="img" aria-labelledby="graph-title-${id} graph-desc-${id}" style="display:block;width:100%;height:auto;max-height:320px;background:${PAPER};color:${INK};overflow:visible"><title id="graph-title-${id}">${e(title)}</title><desc id="graph-desc-${id}">${e(description)}</desc>${body}</svg><figcaption style="margin:12px 4px 0;padding-top:12px;border-top:1px solid #dedede;color:#333;font-family:var(--exam-body,'Noto Serif CJK KR',serif);font-size:14px;line-height:1.85">${e(caption)}</figcaption></figure>`;
 }
 
-function text(x, y, value, extra = '') {
-  return `<text x="${n(x)}" y="${n(y)}" fill="${TEXT}" style="font-family:inherit;font-size:14px" ${extra}>${escapeText(value)}</text>`;
-}
-
-// HTML inside foreignObject lets the shared LaTeX renderer typeset labels,
-// while the underlying SVG coordinates and curves stay exact and unchanged.
-function mathText(x, y, value, anchor = 'start', width = 150, size = 14) {
-  const left = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x;
-  const align = anchor === 'middle' ? 'center' : anchor === 'end' ? 'right' : 'left';
-  return `<foreignObject x="${n(left)}" y="${n(y - 19)}" width="${width}" height="42" style="overflow:visible"><div xmlns="http://www.w3.org/1999/xhtml" class="graph-math" style="color:${TEXT};font-size:${size}px;line-height:1.45;text-align:${align};white-space:nowrap">${escapeText(value)}</div></foreignObject>`;
-}
-
-function line(x1, y1, x2, y2, extra = '') {
-  return `<line x1="${n(x1)}" y1="${n(y1)}" x2="${n(x2)}" y2="${n(y2)}" stroke="${GRID}" stroke-width="1.2" ${extra}/>`;
-}
-
-function axes(p, xTicks, yTicks) {
-  const xZero = p.X(0);
-  const yZero = p.Y(0);
-  let content = '';
-  for (const value of yTicks) {
-    if (value === 0) continue;
-    const y = p.Y(value);
-    content += line(p.left, y, p.right, y, 'opacity="0.35"');
-    content += line(xZero - 4, y, xZero + 4, y);
-    content += text(xZero - 9, y + 4, String(value).replace('-', '−'), 'text-anchor="end"');
+export function evidenceGraph(id) {
+  if(id==='tutorial'){
+    const p=plot(-.6,3,-1.5,1.2);
+    const body=guide(p,1,-.5)+axes(p,[1,2],[-1,[-.5,m`\(-\frac12\)`]])+curve(p,x=>.5*x-1,-.5,2.9)+point(p,0,-1)+point(p,1,-.5)+label(295,42,m`\(y=\frac12x-1\)`,'start',170,18);
+    return wrap(id,'양의 기울기와 음수인 함숫값','기울기 1/2인 직선. x=1에서 점선으로 확인한 함숫값은 −1/2이다.',body,m`그래프는 증가하지만 \(f(1)=-\frac12<0\)이다. 증가한다는 사실만으로 함숫값이 양수라고 판단할 수 없다.`);
   }
-  for (const value of xTicks) {
-    const x = p.X(value);
-    content += line(x, yZero - 4, x, yZero + 4);
-    if (value !== 0) content += text(x, yZero + 19, String(value).replace('-', '−'), 'text-anchor="middle"');
+  if(id==='limit-value'){
+    const p=plot(-.6,2.6,-.7,4.8);
+    const body=guide(p,1,4)+guide(p,1,2,{vertical:false})+axes(p,[1],[2,4])+curve(p,x=>x+1,-.5,2.45)+point(p,1,2,true)+point(p,1,4)+label(348,51,m`\(y=f(x)\)`,'start',130,18);
+    return wrap(id,'극한값과 함숫값','직선 y=x+1의 점 (1,2)는 빈 점, 점 (1,4)는 채운 점이다. 점선으로 두 높이와 x=1을 구분한다.',body,m`빈 점의 높이에서 \(\displaystyle\lim_{x\to1}f(x)=2\), 채운 점에서 \(f(1)=4\)를 확인한다. 두 값은 서로 다르다.`);
   }
-  content += line(p.left, yZero, p.right + 9, yZero);
-  content += line(xZero, p.bottom + 4, xZero, p.top - 7);
-  content += `<path d="M ${n(p.right + 4)} ${n(yZero - 4)} L ${n(p.right + 9)} ${n(yZero)} L ${n(p.right + 4)} ${n(yZero + 4)} M ${n(xZero - 4)} ${n(p.top - 2)} L ${n(xZero)} ${n(p.top - 7)} L ${n(xZero + 4)} ${n(p.top - 2)}" fill="none" stroke="${GRID}" stroke-width="1.2"/>`;
-  content += text(p.right + 15, yZero + 5, 'x', 'font-style="italic"');
-  content += text(xZero + 9, p.top - 5, 'y', 'font-style="italic"');
-  content += text(xZero - 8, yZero + 18, '0', 'text-anchor="end"');
-  return content;
-}
-
-// Sampling happens in mathematical coordinates before mapping to SVG pixels.
-function curve(p, fn, start, end, segments = 160) {
-  const points = [];
-  for (let i = 0; i <= segments; i += 1) {
-    const x = start + (end - start) * i / segments;
-    const y = fn(x);
-    points.push(`${i === 0 ? 'M' : 'L'} ${n(p.X(x))} ${n(p.Y(y))}`);
+  if(id==='continuity-differentiability'){
+    const p=plot(-2.5,2.5,-.65,2.8,{left:100,right:420});
+    const body=guide(p,-1,1)+guide(p,1,1)+axes(p,[-1,1],[1])+curve(p,x=>Math.abs(x),-2.15,2.15)+label(355,48,m`\(y=|x|\)`,'start',130,18);
+    return wrap(id,'연속이지만 미분 불가능한 함수','절댓값 함수의 V자 곡선은 원점에서 연결된다. 양쪽 가지의 기울기는 각각 −1과 1이다.',body,m`원점에서 그래프가 이어지지만 좌미분계수는 \(-1\), 우미분계수는 \(1\)이다. 두 값이 달라 0에서 미분 불가능하다.`);
   }
-  return `<path d="${points.join(' ')}" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
-}
-
-function point(p, x, y, open = false) {
-  return `<circle cx="${n(p.X(x))}" cy="${n(p.Y(y))}" r="${open ? 5.5 : 4.5}" fill="${open ? PAPER : INK}" stroke="${INK}" stroke-width="2"/>`;
-}
-
-function guide(p, x, y) {
-  return line(p.X(x), p.Y(0), p.X(x), p.Y(y), 'stroke-dasharray="4 4"') +
-    line(p.X(0), p.Y(y), p.X(x), p.Y(y), 'stroke-dasharray="4 4"');
-}
-
-function wrap(id, label, description, body, caption, mathLabel = label) {
-  return `<figure style="margin:18px 0 2px;padding:12px 12px 10px;border:1px solid ${GRID};border-radius:14px;background:${PAPER}">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 240" width="100%" role="img" aria-labelledby="graph-title-${id} graph-desc-${id}" style="display:block;width:100%;height:auto;max-height:320px;color:${TEXT};overflow:visible">
-      <title id="graph-title-${id}">${escapeText(label)}</title>
-      <desc id="graph-desc-${id}">${escapeText(description)}</desc>
-      ${mathText(16, 20, mathLabel, 'start', 488, 16)}
-      ${body}
-    </svg>
-    <figcaption style="margin:0 4px;color:${TEXT};font-size:13px;line-height:1.65">${escapeText(caption)}</figcaption>
-  </figure>`;
-}
-
-export function evidenceGraph(caseId) {
-  if (caseId === 'tutorial') {
-    const p = makePlot(-0.4, 3, -1.4, 1);
-    const body = axes(p, [0, 1, 2], [-1, 1]) +
-      guide(p, 1, -0.5) + curve(p, (x) => 0.5 * x - 1, -0.35, 2.9) +
-      point(p, 0, -1) + point(p, 1, -0.5) +
-      mathText(p.X(0) + 11, p.Y(-1) + 19, String.raw`\((0,-1)\)`) +
-      mathText(p.X(1) + 12, p.Y(-0.5) + 21, String.raw`\((1,-\frac{1}{2})\)`);
-    return wrap(caseId, 'y = ½x − 1',
-      '기울기 1/2인 직선이다. 0에서의 값은 −1이며, 1에서의 값 −1/2도 음수이다.',
-      body, String.raw`그래프는 증가하지만 \(f(1)=-\frac{1}{2}\)은 여전히 음수다. 증가한다는 사실과 함숫값이 양수라는 사실은 다르다.`, String.raw`\(y=\frac{1}{2}x-1\)`);
+  if(id==='stationary-extremum'){
+    const p=plot(-1.6,1.6,-3.9,3.9,{left:112,right:408});
+    const body=axes(p)+curve(p,x=>x*x*x,-1.5,1.5)+label(344,42,m`\(y=x^3\)`,'start',120,18)+label(330,151,m`\(y=0\)`,'start',85,16);
+    return wrap(id,'수평 접선이 있지만 극값이 없는 함수','삼차함수 y=x³은 원점에서 수평인 x축에 접한다. 원점 왼쪽에서는 음수, 오른쪽에서는 양수이며 계속 증가한다.',body,m`원점에서 접선은 \(y=0\)이다. \(f'(0)=0\)이지만, 양옆에서 계속 증가하므로 0에서 극값을 갖지 않는다.`);
   }
-
-  if (caseId === 'limit-value') {
-    const p = makePlot(-0.5, 2.5, -0.5, 4.8);
-    const body = axes(p, [0, 1, 2], [2, 4]) +
-      line(p.X(1), p.Y(0), p.X(1), p.Y(4), 'stroke-dasharray="4 4"') +
-      curve(p, (x) => x + 1, -0.45, 2.4) +
-      point(p, 1, 2, true) + point(p, 1, 4) +
-      mathText(p.X(1) + 12, p.Y(2) + 22, String.raw`빈 점 \((1,2)\)`) +
-      mathText(p.X(1) + 12, p.Y(4) - 9, String.raw`함숫값 \((1,4)\)`);
-    return wrap(caseId, 'x ≠ 1에서 y = x + 1,  f(1) = 4',
-      '직선 y=x+1의 점 (1,2)는 뚫려 있고 점 (1,4)가 채워져 있다. 1에서의 극한은 2지만 함숫값은 4이다.',
-      body, String.raw`\(x\)가 1의 양쪽에서 가까워지면 함숫값은 2에 가까워진다. 따로 정한 \(f(1)=4\)는 주변에서의 극한값을 바꾸지 않는다.`, String.raw`\(x\ne1\)에서 \(y=x+1,\quad f(1)=4\)`);
+  if(id==='increasing-sign'){
+    const p=plot(-1.1,7,-4.7,1.1);
+    const body=guide(p,2,-3)+guide(p,5,-1.5)+axes(p,[2,5],[-3,[-1.5,m`\(-\frac32\)`]])+curve(p,x=>.5*x-4,-.6,6.8)+point(p,2,-3)+point(p,5,-1.5)+label(292,36,m`\(y=\frac12x-4\)`,'start',185,18);
+    return wrap(id,'증가함수의 반례','양의 기울기를 가진 직선이 (2,−3), (5,−3/2)를 지난다. 두 점 모두 x축 아래에 있다.',body,m`\(f(5)=-\frac32\)는 \(f(2)=-3\)보다 크지만 음수다. 조건에서 확실히 얻는 결론은 \(f(5)>-3\)이다.`);
   }
-
-  if (caseId === 'continuity-differentiability') {
-    const p = makePlot(-2.4, 2.4, -0.6, 2.6);
-    const body = axes(p, [-2, -1, 0, 1, 2], [1, 2]) +
-      curve(p, (x) => Math.abs(x), -2.2, 2.2) +
-      point(p, 0, 0) +
-      mathText(p.X(-1.55), p.Y(2.18), String.raw`왼쪽 기울기 \(-1\)`, 'middle') +
-      mathText(p.X(1.55), p.Y(2.18), String.raw`오른쪽 기울기 \(1\)`, 'middle');
-    return wrap(caseId, 'y = |x|',
-      'V자 그래프가 원점에서 이어져 있다. 원점 왼쪽 기울기는 −1이고 오른쪽 기울기는 1이다.',
-      body, String.raw`0에서 그래프는 이어지지만 좌미분계수 \(-1\)과 우미분계수 \(1\)은 다르다. 연속이어도 미분 불가능할 수 있다.`, String.raw`\(y=\lvert x\rvert\)`);
+  if(id==='integral-area'){
+    const p=plot(-1.6,1.6,-1.5,1.5,{left:104,right:416});
+    const points=items=>items.map(([x,y])=>`${n(p.X(x))},${n(p.Y(y))}`).join(' ');
+    const regions=`<polygon points="${points([[-1,0],[-1,-1],[0,0]])}" fill="#e6e6e6" stroke="none"/><polygon points="${points([[0,0],[1,1],[1,0]])}" fill="#e6e6e6" stroke="none"/>`;
+    const body=regions+guide(p,-1,-1,{horizontal:false})+guide(p,1,1,{horizontal:false})+axes(p,[-1,1])+curve(p,x=>x,-1.35,1.35)+label(390,33,m`\(y=x\)`,'start',100,18)+label(p.X(-.68),p.Y(-.40)+6,m`\(\frac12\)`,'middle',60,17)+label(p.X(.68),p.Y(.33)+6,m`\(\frac12\)`,'middle',60,17);
+    return wrap(id,'정적분과 도형의 넓이','x축 아래 왼쪽 삼각형과 x축 위 오른쪽 삼각형의 넓이는 각각 1/2이다. 두 영역은 같은 옅은 회색으로 표시된다.',body,m`정적분은 \(-\frac12+\frac12=0\)이지만 전체 넓이는 \(\frac12+\frac12=1\)이다. \(x\)축 아래의 넓이도 양수로 더한다.`);
   }
-
-  if (caseId === 'stationary-extremum') {
-    const p = makePlot(-1.55, 1.55, -3.9, 3.9);
-    const body = axes(p, [-1, 0, 1], [-3, 3]) +
-      `<line x1="${n(p.X(-1.2))}" y1="${n(p.Y(0))}" x2="${n(p.X(1.2))}" y2="${n(p.Y(0))}" stroke="${INK}" stroke-width="2" stroke-dasharray="6 5" opacity="0.65"/>` +
-      curve(p, (x) => x * x * x, -1.5, 1.5, 180) +
-      point(p, 0, 0) + point(p, -0.8, -0.512) + point(p, 0.8, 0.512) +
-      mathText(p.X(-0.85), p.Y(-1.8), String.raw`\(f(x)<0\)`, 'middle') +
-      mathText(p.X(0.85), p.Y(1.75), String.raw`\(f(x)>0\)`, 'middle') +
-      text(p.X(0), p.Y(0) + 49, '0에서 수평 접선', 'text-anchor="middle"');
-    return wrap(caseId, 'y = x³',
-      '삼차함수 x³이 원점을 통과하며 계속 증가한다. 0에서의 접선은 수평이지만 왼쪽 함숫값은 0보다 작고 오른쪽은 0보다 크다.',
-      body, String.raw`\(f'(0)=0\)이지만 0의 왼쪽에는 더 작은 값, 오른쪽에는 더 큰 값이 있다. 수평 접선만으로 극값을 판단할 수 없다.`, String.raw`\(y=x^3\)`);
-  }
-
-  if (caseId === 'increasing-sign') {
-    const p = makePlot(-0.25, 7, -4.65, 0.7);
-    const body = axes(p, [0, 2, 5], [-4, -3, -1]) +
-      guide(p, 2, -3) + guide(p, 5, -1.5) +
-      curve(p, (x) => 0.5 * x - 4, 0, 6.8) +
-      point(p, 2, -3) + point(p, 5, -1.5) +
-      mathText(p.X(2) + 10, p.Y(-3) + 23, String.raw`\((2,-3)\)`) +
-      mathText(p.X(5) + 11, p.Y(-1.5) + 23, String.raw`\((5,-\frac{3}{2})\)`);
-    return wrap(caseId, 'y = ½x − 4',
-      '양의 기울기를 가진 직선이 (2,−3)과 (5,−3/2)를 지난다. 5에서의 함숫값도 x축 아래에 있다.',
-      body, String.raw`\(f(5)\)는 \(f(2)=-3\)보다 크지만 여전히 음수일 수 있다. 조건에서 확실히 얻는 결론은 \(f(5)>-3\)이다.`, String.raw`\(y=\frac{1}{2}x-4\)`);
-  }
-
-  if (caseId === 'integral-area') {
-    const p = makePlot(-1.5, 1.5, -1.4, 1.4);
-    const points = (items) => items.map(([x, y]) => `${n(p.X(x))},${n(p.Y(y))}`).join(' ');
-    const negativeTriangle = `<polygon points="${points([[-1, 0], [-1, -1], [0, 0]])}" fill="${GRID}" fill-opacity="0.7" stroke="${GRID}" stroke-width="1"/>`;
-    const positiveTriangle = `<polygon points="${points([[0, 0], [1, 1], [1, 0]])}" fill="${INK}" fill-opacity="0.18" stroke="${INK}" stroke-opacity="0.35" stroke-width="1"/>`;
-    const body = negativeTriangle + positiveTriangle + axes(p, [-1, 0, 1], [-1, 1]) +
-      curve(p, (x) => x, -1.25, 1.25) +
-      point(p, -1, -1) + point(p, 1, 1) +
-      mathText(p.X(-2 / 3), p.Y(-1 / 3) + 5, String.raw`넓이 \(\frac{1}{2}\)`, 'middle') +
-      mathText(p.X(2 / 3), p.Y(1 / 3) + 5, String.raw`넓이 \(\frac{1}{2}\)`, 'middle');
-    return wrap(caseId, 'y = x,  −1 ≤ x ≤ 1',
-      'x축 아래 왼쪽 삼각형과 x축 위 오른쪽 삼각형의 넓이는 각각 1/2이다. 두 삼각형은 서로 다른 색으로 표시되어 있다.',
-      body, String.raw`정적분은 \(-\frac{1}{2}+\frac{1}{2}=0\)이지만, 전체 넓이는 \(\frac{1}{2}+\frac{1}{2}=1\)이다. \(x\)축 아래 부분도 양의 넓이로 더한다.`, String.raw`\(y=x,\quad -1\le x\le1\)`);
-  }
-
   return '';
 }

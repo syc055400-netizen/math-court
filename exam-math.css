@@ -1,0 +1,16 @@
+/* TeX-generated vector math uses exact width, height, and baseline depth. */
+.katex[data-exam-math] { font-size:1.06em; line-height:1.5; color:#111; }
+.katex[data-exam-math] .katex-html { display:inline; }
+.exam-math-svg { display:inline-block; object-fit:contain; image-rendering:auto!important; margin:0; padding:0; border:0; }
+.graph-math .katex[data-exam-math] { font-size:1em; }
+/* Scroll a long mathematical statement intact instead of distorting its glyphs. */
+.choice-body, .testimony-line p, .opening-statement li, .opening-claim p,
+.condition-list li, .claim-text, .record-steps li, .hearing-transcript .math,
+.stage-quote, .feedback, .takeaway p {
+  min-width:0;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding-block:3px;
+  scrollbar-width:thin;
+}

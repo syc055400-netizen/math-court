@@ -1,0 +1,21 @@
+Exam-style formula rendering
+
+The math expressions in this project are authored as LaTeX and typeset using
+TeX Live's mathptmx, amsmath, and amssymb packages. The resulting PDF pages are
+converted to self-contained SVG artwork with pdftocairo. Formula artwork is
+generated output, not a redistributed font program. The variable and numeral
+style is Times-compatible; it is not an official or proprietary KICE font.
+
+The generated artwork uses Nimbus Roman No9 L and standard Computer Modern / AMS
+mathematical symbols provided by TeX Live. Nimbus Roman is a URW font with an
+embedding exception; the source font programs themselves are not shipped here.
+Computer Modern / AMS fonts are distributed under their permissive font terms.
+mathptmx (PSNFSS) and the TeX packages are used only by the build tool.
+
+KaTeX's accessible MathML remains in the page, with its original MIT license in
+KATEX-LICENSE.txt. For expressions absent from the generated cache, KaTeX's
+original renderer remains the fallback.
+
+To regenerate: node build-exam-math.mjs
+Required build tools: Node.js, pdflatex with mathptmx/amsmath/amssymb, pdftocairo.
+The website itself does not require TeX, pdftocairo, or a font CDN.

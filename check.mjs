@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { tutorial, cases } from './cases.js';
+import { tutorial, cases as basicCases } from './cases.js';
+import { advancedCases } from './advanced-cases.js';
 import { evidenceGraph } from './graphs.js';
 import katex from './katex.mjs';
 
@@ -13,12 +14,15 @@ const reviewed = new Map([
   ['increasing-sign', ['미분', 2]],
   ['integral-area', ['적분', 2]],
   ['integral-proof-valid', ['적분', null]],
+  ['piecewise-stationary-valid', ['미분', null]],
+  ['integral-sign-split', ['적분', 2]],
 ]);
+const cases = [...basicCases, ...advancedCases];
 const all = [tutorial, ...cases];
-assert.equal(cases.length, 6, 'Six regular cases are required');
+assert.equal(cases.length, 8, 'Six basic and two advanced cases are required');
 assert.equal(new Set(all.map(c => c.id)).size, all.length, 'Case IDs must be unique');
 assert.deepEqual(new Set(all.map(c => c.id)), new Set(reviewed.keys()));
-assert.equal(cases.filter(c => c.errorIndex === null).length, 1, 'Include a valid proof');
+assert.equal(cases.filter(c => c.errorIndex === null).length, 2, 'Include valid basic and advanced proofs');
 
 let groups = 0;
 for (const c of all) {
@@ -63,7 +67,7 @@ for (const c of all) {
 let graphCount = 0;
 for (const c of all) {
   const html = evidenceGraph(c.id);
-  if (c.id === 'integral-proof-valid') {
+  if (c.id === 'integral-proof-valid' || c.advanced) {
     assert.equal(html, '', 'The valid algebraic proof does not require a graph');
     continue;
   }

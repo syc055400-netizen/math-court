@@ -1,13 +1,18 @@
-import { tutorial, cases } from './cases.js?v=20261030-latex';
-import { evidenceGraph } from './graphs.js?v=20261030-latex';
+import { tutorial, cases as basicCases } from './cases.js?v=20261030-latex';
+import { advancedCases } from './advanced-cases.js?v=20261105';
+import { migrateProgression, totalCoins, caseAccess, awardCase } from './progression.js?v=20261105';
+import { characterScene, portrait } from './characters.js?v=20261105';
+import { ensureHearing, hearingScene, hearingPaper, bindHearing } from './hearing.js?v=20261105';
+import { evidenceGraph } from './graphs.js?v=20261105-exam';
 import { enterCourt } from './entrance.js';
-import { typesetMath } from './math.js';
+import { typesetMath } from './math.js?v=20261105-exam';
 
 const app = document.getElementById('app');
 const dialogRoot = document.getElementById('dialog-root');
 const STORAGE_KEY = 'math-court-calculus-v1';
+const cases = [...basicCases, ...advancedCases];
 const allCases = [tutorial, ...cases];
-const stageNames = {error:'오류 지목',reason:'이유 판단',evidence:'증거 확인',counter:'반론 검토',repair:'논리 복구',transfer:'새 문제 적용'};
+const stageNames = {error:'진술·이의 제기',reason:'이유 판단',evidence:'증거 확인',counter:'반론 검토',repair:'논리 복구',transfer:'새 문제 적용'};
 const stageButtons = {error:'판단 확인하기',reason:'이유 확인하기',evidence:'증거 제출하기',counter:'반론 판단하기',repair:'수정안 확정하기',transfer:'적용 결과 확인'};
 const escapeHTML = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const e = escapeHTML;
@@ -25,10 +30,21 @@ try {
     state.completed = raw.completed && typeof raw.completed === 'object' ? raw.completed : {};
     state.runs = raw.runs && typeof raw.runs === 'object' ? raw.runs : {};
     state.lastCase = typeof raw.lastCase === 'string' ? raw.lastCase : null;
+    state.progression = raw.progression;
   }
 } catch { /* A missing or invalid record starts a fresh session. */ }
+migrateProgression(state, cases);
+
+function updateCoins() {
+  const badge=document.getElementById('coin-balance');
+  if(badge){badge.innerHTML=`<span class="coin-icon" aria-hidden="true">C</span><strong>${totalCoins(state)}</strong><span class="coin-unit">코인</span>`;badge.setAttribute('aria-label',`누적 ${totalCoins(state)}코인. 보상 안내 열기`);}
+}
+function nextAvailable(exclude) { return cases.find(c=>c.id!==exclude&&!state.completed[c.id]&&caseAccess(state,c,cases).unlocked)||cases.find(c=>c.id!==exclude&&caseAccess(state,c,cases).unlocked)||cases[0]; }
+function showCoins(){showDialog('사건을 해결하고, 다음 재판으로',`<p><strong>누적 ${totalCoins(state)}코인</strong>을 모았어요. 코인은 차감되지 않으며, 열린 사건은 계속 플레이할 수 있어요.</p><ul><li>정식 사건 해결: <strong>30코인</strong></li><li>첫 시도에 오류 지목 성공: <strong>+10코인</strong></li><li>첫 시도에 증거 확인·논리 복구 성공: <strong>각 +5코인</strong></li></ul><p>누적 <strong>60코인</strong>이면 다른 단원의 기초 사건, <strong>100코인과 관련 기초 사건 완료</strong>로 심화 사건이 열려요.</p><p>재도전은 무료예요. 같은 사건에서는 아직 받지 못한 추가 보상만 받을 수 있어요. 튜토리얼에는 코인 보상이 없어요.</p>`,[{label:'확인',primary:true}]);}
+function lockedCase(c){const access=caseAccess(state,c,cases);showDialog('아직 봉인된 사건',`<p><strong>${e(c.title)}</strong></p><p>${e(access.reason)}</p><p>기초 사건을 끝까지 해결하면 30코인을 받아요. 다시 도전해도 코인이 줄어들지는 않아요.</p>`,[{label:'돌아가기'},{label:'열린 사건 보기',primary:true,action:archive}]);}
 
 function save() {
+  updateCoins();
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch { toast('지금은 기록을 저장할 수 없어요. 이 화면에서는 계속 플레이할 수 있어요.'); }
 }
@@ -70,7 +86,7 @@ function showDialog(title,content,actions){
   dialogRoot.querySelectorAll('[data-dialog-action]').forEach(b=>b.addEventListener('click',()=>{const a=actions[Number(b.dataset.dialogAction)];close();a.action?.();}));
   dialogRoot.querySelector('[data-dialog-action]')?.focus();
 }
-function showHelp(){showDialog('처음이라면, 첫 사건부터',`<p>주어진 풀이의 <strong>처음 잘못된 줄</strong>을 찾고, 그 판단을 뒷받침하는 증거를 고르는 게임이에요.</p><ol><li><strong>조건 읽기</strong> — 조건은 재판 중에도 계속 보여요.</li><li><strong>판단하기</strong> — 선택한 뒤 확인 버튼을 눌러 확정해요.</li><li><strong>증거 대조하기</strong> — 반례도 주어진 조건을 만족해야 해요.</li><li><strong>논리 복구하기</strong> — 필요한 부분을 고친 뒤 새 문제에 적용해요.</li></ol><p>올바른 풀이도 있어요. <strong>‘오류 없음’</strong>을 근거와 함께 판단해 보세요. 틀려도 감점이나 재도전 비용은 없으며, 첫 판단과 다시 확인한 단계를 나누어 기록해요.</p>`,[{label:'닫기'},{label:'튜토리얼 열기',primary:true,action:()=>startCase(tutorial.id,true)}]);}
+function showHelp(){showDialog('진술을 듣고, 이의를 제기하세요',`<p>판사가 사건을 소개하면 상대측이 풀이를 한 줄씩 설명해요. <strong>처음 잘못된 진술</strong>에서 <strong>‘이의 있습니다!’</strong>를 눌러 주세요.</p><ol><li><strong>사건 소개</strong> — 판사가 알려 주는 조건과 주장을 확인해요.</li><li><strong>진술 청취</strong> — 한 줄씩 듣고, 처음 잘못된 부분에서 이의를 제기해요. 지나간 진술도 다시 볼 수 있어요.</li><li><strong>증거 제출</strong> — 판단의 이유와 조건에 맞는 증거를 확인해요.</li><li><strong>최종 변론</strong> — 논리를 정리하고 새로운 문제에도 적용해요.</li></ol><p>모든 진술이 타당하면 끝까지 들은 뒤 <strong>‘이의 없음’</strong>을 선택하세요. 틀려도 재도전은 무료예요.</p><p>정식 사건을 해결하면 <strong>30코인</strong>, 정확한 첫 판단으로 최대 <strong>20코인</strong>을 더 받아요. 누적 코인으로 새 단원과 심화 재판을 열 수 있어요.</p>`,[{label:'닫기'},{label:'튜토리얼 열기',primary:true,action:()=>startCase(tutorial.id,true)}]);}
 
 function stagesFor(c){return c.id===tutorial.id?['error','evidence','repair']:['error','reason','evidence','counter','repair','transfer'];}
 function freshRun(c){return {id:c.id,stage:0,selection:null,cleared:false,firstAnswers:{},mistakes:{},finished:false,seed:Math.floor(Math.random()*2147483647)};}
@@ -78,6 +94,7 @@ function validRun(c,run){return run && run.id===c.id && Number.isInteger(run.sta
 function getRun(c){if(!validRun(c,state.runs[c.id]))state.runs[c.id]=freshRun(c);if(!Number.isInteger(state.runs[c.id].seed))state.runs[c.id].seed=Math.floor(Math.random()*2147483647);return state.runs[c.id];}
 function startCase(id,restart=false){
   const c=allCases.find(x=>x.id===id);if(!c)return;
+  if(!caseAccess(state,c,cases).unlocked){lockedCase(c);return;}
   const run=getRun(c);if(restart||run.finished)state.runs[id]=freshRun(c);
   state.lastCase=id;feedback=null;save();
   const hash=`#case/${encodeURIComponent(id)}`;
@@ -96,20 +113,24 @@ function renderHome(){
   const resume=allCases.find(c=>c.id===state.lastCase&&validRun(c,state.runs[c.id])&&!state.runs[c.id].finished);
   app.innerHTML=`<section class="title-screen" aria-labelledby="game-title"><div class="title-masthead"><small>미적분Ⅰ · 논리 추리 어드벤처</small><h1 id="game-title">오답법정</h1><p>그럴듯한 풀이, 숨겨진 모순.<br>이번 재판의 판단은 당신에게 달렸다.</p></div><div class="title-menu"><button class="btn primary" id="hero-start">${resume?'이어서 재판하기':state.tutorialDone?'다음 사건 시작':'재판 시작하기'}</button><button class="btn secondary" id="hero-tutorial">처음 배우기</button><button class="btn secondary" id="open-archive">사건 기록실 <span>${count} / ${cases.length}</span></button></div><div class="title-footer"><span>극한·연속 / 미분 / 적분</span><span>${resume?'진행 중인 재판이 저장되어 있어요.':'첫 재판은 서기와 함께하는 튜토리얼입니다.'}</span></div></section>`;
   typesetMath(app);
-  document.getElementById('hero-start').onclick=()=>startCase(resume?.id||(!state.tutorialDone?tutorial.id:(cases.find(c=>!state.completed[c.id])||cases[0]).id));
+  document.getElementById('hero-start').onclick=()=>startCase(resume?.id||(!state.tutorialDone?tutorial.id:nextAvailable().id));
   document.getElementById('hero-tutorial').onclick=()=>startCase(tutorial.id,true);
   document.getElementById('open-archive').onclick=archive;
 }
 function renderArchive(){
   setScreen('archive');document.title='사건 기록실 · 오답법정';
-  const count=completedCount(),chapters=['전체','극한·연속','미분','적분'];
+  const count=completedCount(),chapters=['전체','극한·연속','미분','적분'],coins=totalCoins(state);
   const filtered=cases.filter(c=>selectedChapter==='전체'||c.chapter===selectedChapter);
-  app.innerHTML=`<section class="archive-view"><div class="archive-top"><button class="back-link" id="back-title">← 법정으로</button><h1>사건 기록실</h1><span class="archive-count">${count} / ${cases.length} 해결</span></div><nav class="chapter-tabs" aria-label="단원 필터">${chapters.map(ch=>`<button class="tab ${ch===selectedChapter?'active':''}" data-chapter="${e(ch)}" aria-pressed="${ch===selectedChapter}">${e(ch)}</button>`).join('')}</nav><div class="case-grid">${filtered.map(c=>{
-    const done=state.completed[c.id],active=validRun(c,state.runs[c.id])&&!state.runs[c.id].finished;
-    return `<button class="case-card ${done?'completed':''}" data-case="${e(c.id)}"><div class="case-card-top"><span class="case-number">사건 ${String(cases.indexOf(c)+1).padStart(2,'0')}</span><span class="case-badge">${done?'해결':active?'진행 중':'◆'.repeat(c.level)}</span></div><span class="case-category">${e(c.chapter)}</span><h2 class="case-title">${e(c.title)}</h2><p class="case-description">${e(c.concept)}</p><div class="case-footer"><span>${done?`첫 판단 ${done.firstCorrect}/${done.total}`:e(c.duration)}</span><span>${done?'재심하기':active?'이어하기':'사건 열기'} →</span></div></button>`;
-  }).join('')}</div><p class="archive-note">원하는 사건부터 시작해도 좋아요. 틀린 판단은 증거를 다시 살펴보고 고칠 수 있어요.</p></section>`;
+  const target=coins<60?60:100,allCoinMilestones=coins>=100;
+  app.innerHTML=`<section class="archive-view"><div class="archive-top"><button class="back-link" id="back-title">← 법정으로</button><h1>사건 기록실</h1><span class="archive-count">${count} / ${cases.length} 해결</span></div><div class="archive-rewards"><div><span class="eyebrow">누적 재판 보상</span><strong><span class="coin-icon" aria-hidden="true">C</span> ${coins} <small>코인</small></strong></div><div class="unlock-progress"><p>${allCoinMilestones?'심화 재판의 코인 조건 달성':`다음 봉인 해제까지 <strong>${target-coins}코인</strong>`}</p><div class="unlock-track" role="progressbar" aria-label="사건 해금 코인" aria-valuenow="${Math.min(coins,target)}" aria-valuemin="0" aria-valuemax="${target}"><i style="width:${Math.min(100,coins/target*100)}%"></i></div><small>${allCoinMilestones?'관련 기초 사건을 마치면 심화 사건이 열려요.':target===60?'60코인 · 미분과 적분의 기초 사건':'100코인 + 관련 기초 사건 완료 · 심화 재판'}</small></div><button class="reward-help" id="reward-help">보상 규칙 ↗</button></div><nav class="chapter-tabs" aria-label="단원 필터">${chapters.map(ch=>`<button class="tab ${ch===selectedChapter?'active':''}" data-chapter="${e(ch)}" aria-pressed="${ch===selectedChapter}">${e(ch)}</button>`).join('')}</nav><div class="case-grid">${filtered.map(c=>{
+    const done=state.completed[c.id],active=validRun(c,state.runs[c.id])&&!state.runs[c.id].finished,access=caseAccess(state,c,cases);
+    const earned=state.progression.rewards[c.id]||{};
+    const earnedCoins=(earned.base?30:0)+(earned.error?10:0)+(earned.evidence?5:0)+(earned.repair?5:0);
+    return `<button class="case-card ${done?'completed':''} ${access.unlocked?'':'locked'} ${c.advanced?'advanced':''}" data-case="${e(c.id)}" aria-label="${e(c.title)}${access.unlocked?'':`, 잠김. ${e(access.reason)}`}"><div class="case-card-top"><span class="case-number">${c.advanced?'심화 재판':'사건'} ${String(cases.indexOf(c)+1).padStart(2,'0')}</span><span class="case-badge">${!access.unlocked?'봉인':done?'해결':active?'진행 중':'◆'.repeat(c.level)}</span></div><span class="case-category">${e(c.chapter)}</span><h2 class="case-title">${e(c.title)}</h2><p class="case-description">${e(c.concept)}</p>${!access.unlocked?`<div class="lock-condition"><span aria-hidden="true">▣</span> ${e(access.reason)}</div>`:`<div class="case-reward"><span class="coin-icon" aria-hidden="true">C</span> ${done?`획득 ${earnedCoins} / 50코인`:'사건 해결 30 · 추가 보상 최대 20'}</div>`}<div class="case-footer"><span>${done?`첫 판단 ${done.firstCorrect}/${done.total}`:e(c.duration)}</span><span>${!access.unlocked?'해금 조건 보기':done?'재심하기':active?'이어하기':'사건 열기'} →</span></div></button>`;
+  }).join('')}</div><p class="archive-note">기초 사건 2개는 처음부터 열려 있어요. 틀려도 끝까지 해결하면 30코인! 코인은 차감되지 않으며, 재심에서는 받지 못한 추가 보상만 획득해요.</p></section>`;
   typesetMath(app);
   document.getElementById('back-title').onclick=home;
+  document.getElementById('reward-help').onclick=showCoins;
   app.querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>startCase(b.dataset.case));
   app.querySelectorAll('[data-chapter]').forEach(b=>b.onclick=()=>{selectedChapter=b.dataset.chapter;renderArchive();app.querySelector(`[data-chapter="${selectedChapter}"]`)?.focus();});
 }
@@ -125,10 +146,33 @@ function getStage(c,stage){
   };
   const record=records[stage];return {...record,options:record.options.map((o,i)=>({...o,value:o.value??i}))};
 }
-function dossier(c,run){return `<aside class="case-dossier"><div class="dossier-tab">사건 기록</div><div class="dossier-inner"><span class="eyebrow">주어진 조건</span><ul class="condition-list">${c.conditions.map(t=>`<li class="math">${e(t)}</li>`).join('')}</ul><div class="dossier-divider"></div><span class="eyebrow">검토할 주장</span><p class="claim-text math">${e(c.claim)}</p><details class="record-steps" ${run.stage===0?'':'open'}><summary>전체 풀이 확인</summary><ol>${c.steps.map((s,i)=>`<li class="${run.stage>0&&i===c.errorIndex?'marked-step':''}">${e(s)}</li>`).join('')}</ol></details><p class="dossier-note">조건을 만족하는 증거인지 확인하세요.</p></div></aside>`;}
+function dossier(c,run){return `<aside class="case-dossier"><div class="dossier-tab">사건 기록</div><div class="dossier-inner"><span class="eyebrow">주어진 조건</span><ul class="condition-list">${c.conditions.map(t=>`<li class="math">${e(t)}</li>`).join('')}</ul><div class="dossier-divider"></div><span class="eyebrow">검토할 주장</span><p class="claim-text math">${e(c.claim)}</p>${run.stage===0?'<p class="dossier-note hearing-file-note">상대의 진술을 듣고, 처음 잘못된 부분에서 이의를 제기하세요.</p>':`<details class="record-steps" ${run.stage===0?'':'open'}><summary>전체 풀이 확인</summary><ol>${c.steps.map((s,i)=>`<li class="${run.stage>0&&i===c.errorIndex?'marked-step':''}">${e(s)}</li>`).join('')}</ol></details>`}<p class="dossier-note">조건을 만족하는 증거인지 확인하세요.</p></div></aside>`;}
+function renderHearingGame(c,run,stages){
+  const hearing=ensureHearing(c,run),isTutorial=c.id===tutorial.id;
+  document.title=`${c.title} · 오답법정`;
+  if(run.cleared&&!feedback)feedback={success:true,text:successMessage(c,'error')};
+  app.innerHTML=`<section class="game-view"><div class="game-topbar"><button type="button" class="back-link" id="back-home">← 사건 목록</button><div class="case-heading"><span class="eyebrow">${isTutorial?'첫 재판':c.advanced?'심화 재판':`사건 ${String(cases.indexOf(c)+1).padStart(2,'0')}`} · ${e(c.chapter)}</span><h1>${e(c.title)}</h1></div><span class="practice-label">${isTutorial?'서기와 함께 연습':'진술 청취 · 기록 자동 저장'}</span></div><div id="court-reaction">${hearingScene(c,run,feedback)}</div><nav class="stage-nav" aria-label="사건 진행 단계">${stages.map((key,i)=>`<span class="stage ${i===0?'active':''}" ${i===0?'aria-current="step"':''}><b>${String(i+1).padStart(2,'0')}</b> ${i===0?'진술·이의 제기':stageNames[key]}</span>`).join('')}</nav><div class="game-layout ${hearing.phase==='opening'&&!run.cleared?'hearing-opening-layout':''}">${hearing.phase==='opening'&&!run.cleared?'':dossier(c,run)}<section class="game-paper hearing-paper" aria-labelledby="question">${hearingPaper(c,run,feedback)}</section></div></section>`;
+  typesetMath(app);
+  document.getElementById('back-home').addEventListener('click',archive);
+  bindHearing(app,c,run,{
+    onUpdate:()=>{feedback=null;save();renderGame(c);app.querySelector('[data-hearing-action="object"],[data-hearing-action="accept"]')?.focus({preventScroll:true});},
+    onSubmit:value=>{
+      if(run.cleared)return;
+      const pick=getStage(c,'error').options.find(option=>option.value===value);if(!pick)return;
+      run.selection=value;
+      if(!('error' in run.firstAnswers))run.firstAnswers.error=pick.correct;
+      if(pick.correct){run.cleared=true;feedback={success:true,text:successMessage(c,'error')};playSound(true);}
+      else{run.mistakes.error=(run.mistakes.error||0)+1;feedback={success:false,text:pick.feedback};playSound(false);}
+      save();renderGame(c);app.querySelector('[data-hearing-action="proceed"],[data-hearing-action="object"],[data-hearing-action="accept"]')?.focus({preventScroll:true});
+    },
+    onProceed:()=>{if(!run.cleared)return;run.stage++;run.selection=null;run.cleared=false;feedback=null;save();renderGame(c);app.querySelector('.question')?.focus({preventScroll:true});}
+  });
+}
+
 function renderGame(c){
   setScreen('game');
   const run=getRun(c),stages=stagesFor(c);if(run.stage>=stages.length||run.finished){finish(c,run);renderResult(c,run);return;}
+  if(stages[run.stage]==='error'){renderHearingGame(c,run,stages);return;}
   const key=stages[run.stage],s=getStage(c,key),isTutorial=c.id===tutorial.id;
   if(key!=='error'){
     let seed=(run.seed+run.stage*1013904223)>>>0;
@@ -136,12 +180,13 @@ function renderGame(c){
   }
   document.title=`${c.title} · 오답법정`;
   if(run.cleared&&!feedback){const pick=s.options.find(o=>o.value===run.selection);feedback={success:true,text:key==='error'?successMessage(c,key):(pick?.feedback||successMessage(c,key))};}
-  app.innerHTML=`<section class="game-view"><div class="game-topbar"><button type="button" class="back-link" id="back-home">← 사건 목록</button><div class="case-heading"><span class="eyebrow">${isTutorial?'첫 재판':`사건 ${String(cases.indexOf(c)+1).padStart(2,'0')}`} · ${e(c.chapter)}</span><h1>${e(c.title)}</h1></div><span class="practice-label">${isTutorial?'서기와 함께 연습':'기록 자동 저장'}</span></div><div class="court-scene" aria-label="픽셀 아트 법정"><span class="scene-label">${isTutorial?'첫 재판 · 튜토리얼':'심리 진행 중'}</span><div class="judge-speech">${run.cleared?'좋습니다. 다음 증거를 살펴보죠.':key==='error'?'그 주장은, 정말 타당합니까?':key==='evidence'?'증거는 조건을 만족해야 합니다.':'당신의 판단을 들려주세요.'}</div></div><nav class="stage-nav" aria-label="사건 진행 단계">${stages.map((k,i)=>`<span class="stage ${i===run.stage?'active':i<run.stage?'done':''}" ${i===run.stage?'aria-current="step"':''}><b>${String(i+1).padStart(2,'0')}</b> ${stageNames[k]}</span>`).join('')}</nav><div class="game-layout">${dossier(c,run)}<section class="game-paper" aria-labelledby="question"><div class="paper-meta"><span>${isTutorial?'연습 사건':'심리 기록'} / ${run.stage+1} / ${stages.length}</span><span>시간 제한 없음</span></div><div class="guide"><span class="guide-icon" aria-hidden="true">${isTutorial?'서':'안'}</span><div><span class="guide-name">${isTutorial?'서기의 안내':'판단의 실마리'}</span><p class="guide-text">${e(s.guide)}</p></div></div><h2 class="question" id="question" tabindex="-1">${e(s.title)}</h2>${s.quote?`<blockquote class="stage-quote math">${e(s.quote)}</blockquote>`:''}<div class="choice-list" aria-label="${e(stageNames[key])} 선택지">${s.options.map((o,i)=>`<button type="button" class="choice ${run.selection===o.value?'selected':''} ${run.cleared&&run.selection===o.value?'correct':''} ${feedback&&!feedback.success&&run.selection===o.value?'incorrect':''}" data-choice="${i}" aria-pressed="${run.selection===o.value}" ${run.cleared?'disabled':''}><span class="choice-number">${o.value==='none'?'✓':String(i+1).padStart(2,'0')}</span><span class="choice-body">${e(o.text)}${o.detail?`<small class="choice-detail">${e(o.detail)}</small>`:''}</span><span class="choice-check" aria-hidden="true">${run.selection===o.value?'✓':''}</span></button>`).join('')}</div><div id="stage-feedback" class="feedback ${feedback?(feedback.success?'success':'error'):''}" aria-live="polite">${feedback?`<strong>${feedback.success?'확인했어요.':'다시 살펴볼까요?'}</strong> ${e(feedback.text)}`:''}</div>${run.cleared&&key==='evidence'?evidenceGraph(c.id):''}<div class="game-actions"><span class="action-hint">${run.cleared?'근거를 확인한 뒤 다음 단계로 이동해요.':run.mistakes[key]?'다시 선택해도 감점은 없어요.':'선택한 뒤 확인 버튼을 눌러 주세요.'}</span><button type="button" class="btn primary" id="confirm-answer" ${run.selection===null&&!run.cleared?'disabled':''}>${run.cleared?(run.stage===stages.length-1?'판결 확인하기':'다음 단계로'):stageButtons[key]} <span aria-hidden="true">→</span></button></div></section></div></section>`;
+  app.innerHTML=`<section class="game-view"><div class="game-topbar"><button type="button" class="back-link" id="back-home">← 사건 목록</button><div class="case-heading"><span class="eyebrow">${isTutorial?'첫 재판':`사건 ${String(cases.indexOf(c)+1).padStart(2,'0')}`} · ${e(c.chapter)}</span><h1>${e(c.title)}</h1></div><span class="practice-label">${isTutorial?'서기와 함께 연습':'기록 자동 저장'}</span></div><div id="court-reaction">${characterScene(key,feedback?(feedback.success?'correct':'wrong'):'idle',c.errorIndex===null)}</div><nav class="stage-nav" aria-label="사건 진행 단계">${stages.map((k,i)=>`<span class="stage ${i===run.stage?'active':i<run.stage?'done':''}" ${i===run.stage?'aria-current="step"':''}><b>${String(i+1).padStart(2,'0')}</b> ${stageNames[k]}</span>`).join('')}</nav><div class="game-layout">${dossier(c,run)}<section class="game-paper" aria-labelledby="question"><div class="paper-meta"><span>${isTutorial?'연습 사건':'심리 기록'} / ${run.stage+1} / ${stages.length}</span><span>시간 제한 없음</span></div><div class="guide"><span class="guide-icon" aria-hidden="true">${isTutorial?'서':'안'}</span><div><span class="guide-name">${isTutorial?'서기의 안내':'판단의 실마리'}</span><p class="guide-text">${e(s.guide)}</p></div></div><h2 class="question" id="question" tabindex="-1">${e(s.title)}</h2>${s.quote?`<blockquote class="stage-quote math">${e(s.quote)}</blockquote>`:''}<div class="choice-list" aria-label="${e(stageNames[key])} 선택지">${s.options.map((o,i)=>`<button type="button" class="choice ${run.selection===o.value?'selected':''} ${run.cleared&&run.selection===o.value?'correct':''} ${feedback&&!feedback.success&&run.selection===o.value?'incorrect':''}" data-choice="${i}" aria-pressed="${run.selection===o.value}" ${run.cleared?'disabled':''}><span class="choice-number">${o.value==='none'?'✓':String(i+1).padStart(2,'0')}</span><span class="choice-body">${e(o.text)}${o.detail?`<small class="choice-detail">${e(o.detail)}</small>`:''}</span><span class="choice-check" aria-hidden="true">${run.selection===o.value?'✓':''}</span></button>`).join('')}</div><div id="stage-feedback" class="feedback ${feedback?(feedback.success?'success':'error'):''}" aria-live="polite">${feedback?`<strong>${feedback.success?'확인했어요.':'다시 살펴볼까요?'}</strong> ${e(feedback.text)}`:''}</div>${run.cleared&&key==='evidence'?evidenceGraph(c.id):''}<div class="game-actions"><span class="action-hint">${run.cleared?'근거를 확인한 뒤 다음 단계로 이동해요.':run.mistakes[key]?'다시 선택해도 감점은 없어요.':'선택한 뒤 확인 버튼을 눌러 주세요.'}</span><button type="button" class="btn primary" id="confirm-answer" ${run.selection===null&&!run.cleared?'disabled':''}>${run.cleared?(run.stage===stages.length-1?'판결 확인하기':'다음 단계로'):stageButtons[key]} <span aria-hidden="true">→</span></button></div></section></div></section>`;
   typesetMath(app);
   document.getElementById('back-home').addEventListener('click',archive);
   app.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>{
     if(run.cleared)return;run.selection=s.options[Number(b.dataset.choice)].value;feedback=null;save();
     app.querySelectorAll('[data-choice]').forEach(el=>{const on=el===b;el.classList.toggle('selected',on);el.classList.remove('incorrect');el.setAttribute('aria-pressed',String(on));el.querySelector('.choice-check').textContent=on?'✓':'';});
+    document.getElementById('court-reaction').innerHTML=characterScene(key,'selected',c.errorIndex===null);
     const f=document.getElementById('stage-feedback');f.className='feedback';f.textContent='';document.getElementById('confirm-answer').disabled=false;
   }));
   document.getElementById('confirm-answer').addEventListener('click',()=>{
@@ -164,14 +209,17 @@ function finish(c,run){
   const stages=stagesFor(c),firstCorrect=stages.filter(s=>run.firstAnswers[s]===true).length;
   if(c.id===tutorial.id)state.tutorialDone=true;
   else state.completed[c.id]={firstCorrect,total:stages.length,firstAnswers:{...run.firstAnswers},at:new Date().toISOString()};
+  run.reward=awardCase(state,c,run,cases);
   if(state.lastCase===c.id)state.lastCase=null;save();
 }
 function renderResult(c,run){
   setScreen('result');
   const stages=stagesFor(c),isTutorial=c.id===tutorial.id;
   const firstCorrect=stages.filter(s=>run.firstAnswers[s]===true).length;
-  const next=cases.find(x=>!state.completed[x.id]&&x.id!==c.id)||cases[(cases.indexOf(c)+1)%cases.length]||cases[0];
-  app.innerHTML=`<section class="result-view"><button type="button" class="back-link" id="back-home">← 사건 목록</button><div class="result-card"><span class="eyebrow">재판 종료 · ${isTutorial?'첫 재판':e(c.chapter)}</span><div class="verdict-stamp">${c.errorIndex===null?'타당성 확인':'논리 복구'}</div><h1 tabindex="-1">${isTutorial?'첫 재판을 마쳤습니다.':'사건을 해결했습니다.'}</h1><p class="result-subtitle">${e(c.title)}</p><div class="takeaway"><span>이번 사건에서 확인한 것</span><p>${e(c.takeaway)}</p></div><div class="result-summary"><strong>첫 판단 ${firstCorrect} / ${stages.length}</strong><span>${firstCorrect===stages.length?'모든 단계에서 처음부터 근거를 정확히 판단했어요.':`${stages.length-firstCorrect}개 단계는 근거를 다시 확인하며 해결했어요.`}</span></div><div class="skill-grid">${stages.map(s=>`<div class="skill-item ${run.firstAnswers[s]?'passed':''}"><span>${e(stageNames[s])}</span><strong>${run.firstAnswers[s]?'처음부터 정확':'다시 확인 후 해결'}</strong></div>`).join('')}</div><div class="result-actions"><button type="button" class="btn primary" id="next-case">${isTutorial?'첫 정식 사건 열기':'다음 사건 열기'} <span aria-hidden="true">→</span></button><button type="button" class="btn secondary" id="retry-case">무료로 다시 도전</button></div><button type="button" class="btn ghost" id="all-cases">모든 사건 보기</button></div></section>`;
+  const next=nextAvailable(c.id);
+  const reward=run.reward;
+  const unlocked=reward?.newlyUnlocked?.map(id=>cases.find(item=>item.id===id)).filter(Boolean)||[];
+  app.innerHTML=`<section class="result-view"><button type="button" class="back-link" id="back-home">← 사건 목록</button><div class="result-card"><span class="eyebrow">재판 종료 · ${isTutorial?'첫 재판':e(c.chapter)}</span><div class="verdict-characters">${portrait('judge','pleased')}${portrait('advocate','pleased')}</div><div class="verdict-stamp">${c.errorIndex===null?'타당성 확인':'논리 복구'}</div><h1 tabindex="-1">${isTutorial?'첫 재판을 마쳤습니다.':'사건을 해결했습니다.'}</h1><p class="result-subtitle">${e(c.title)}</p>${isTutorial?'<p class="tutorial-reward-note">이제 정식 사건에서 코인을 모아 새 재판을 열어 보세요.</p>':`<div class="reward-summary"><span class="eyebrow">이번 재판 보상</span><strong class="reward-total"><span class="coin-icon" aria-hidden="true">C</span> +${reward?.totalAward||0}</strong><span class="reward-balance">누적 ${totalCoins(state)}코인</span><div class="reward-breakdown">${(reward?.breakdown||[]).map(row=>`<div class="${row.awarded?'earned':''}"><span>${e(row.label)}</span><strong>${row.awarded?`+${row.amount}`:row.previouslyEarned?'이미 획득':'다음 재심에 도전'}</strong></div>`).join('')}</div><p>${reward?.totalAward?'보상이 기록되었습니다. 열린 사건은 계속 플레이할 수 있어요.':'이미 받은 보상은 중복 지급되지 않아요. 미획득 추가 보상에 도전해 보세요.'}</p></div>`}${unlocked.length?`<div class="unlock-announcement" role="status"><strong>봉인이 풀렸습니다!</strong><p>${unlocked.map(item=>e(item.title)).join(' · ')}</p><span>사건 기록실에서 새 재판을 확인하세요.</span></div>`:''}<div class="takeaway"><span>이번 사건에서 확인한 것</span><p>${e(c.takeaway)}</p></div><div class="result-summary"><strong>첫 판단 ${firstCorrect} / ${stages.length}</strong><span>${firstCorrect===stages.length?'모든 단계에서 처음부터 근거를 정확히 판단했어요.':`${stages.length-firstCorrect}개 단계는 근거를 다시 확인하며 해결했어요.`}</span></div><div class="skill-grid">${stages.map(s=>`<div class="skill-item ${run.firstAnswers[s]?'passed':''}"><span>${e(stageNames[s])}</span><strong>${run.firstAnswers[s]?'처음부터 정확':'다시 확인 후 해결'}</strong></div>`).join('')}</div><div class="result-actions"><button type="button" class="btn primary" id="next-case">${isTutorial?'첫 정식 사건 열기':'다음 사건 열기'} <span aria-hidden="true">→</span></button><button type="button" class="btn secondary" id="retry-case">무료로 다시 도전</button></div><button type="button" class="btn ghost" id="all-cases">모든 사건 보기</button></div></section>`;
   typesetMath(app);
   document.getElementById('back-home').addEventListener('click',archive);document.getElementById('all-cases').addEventListener('click',archive);
   document.getElementById('next-case').addEventListener('click',()=>startCase(isTutorial?cases[0].id:next.id));
@@ -181,8 +229,9 @@ function route(){
   feedback=null;
   const path=location.hash.replace(/^#/,'');
   if(path==='cases'){renderArchive();return;}
-  if(path.startsWith('case/')){let id;try{id=decodeURIComponent(path.slice(5));}catch{home();return;}const c=allCases.find(x=>x.id===id);if(c){renderGame(c);return;}}
+  if(path.startsWith('case/')){let id;try{id=decodeURIComponent(path.slice(5));}catch{home();return;}const c=allCases.find(x=>x.id===id);if(c){if(!caseAccess(state,c,cases).unlocked){history.replaceState(null,'','#cases');renderArchive();lockedCase(c);}else{const run=getRun(c);if(!run.finished&&run.stage<stagesFor(c).length){state.lastCase=c.id;save();}renderGame(c);}return;}}
   renderHome();
 }
 window.addEventListener('hashchange',route);
-updateSound();route();
+document.getElementById('coin-balance').addEventListener('click',showCoins);
+updateSound();save();route();
