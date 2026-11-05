@@ -1,12 +1,12 @@
-import { tutorial, cases as basicCases } from './cases.js?v=20261030-latex';
-import { advancedCases } from './advanced-cases.js?v=20261105';
+import { tutorial, cases as basicCases } from './cases.js?v=20261105-school';
+import { advancedCases } from './advanced-cases.js?v=20261105-school';
 import { migrateProgression, totalCoins, caseAccess, awardCase } from './progression.js?v=20261105';
 import { characterScene, portrait } from './characters.js?v=20261105';
 import { ensureHearing, hearingScene, hearingPaper, bindHearing } from './hearing.js?v=20261105';
 import { evidenceGraph } from './graphs.js?v=20261105-exam';
 import { enterCourt } from './entrance.js';
-import { typesetMath } from './math.js?v=20261105-workshop';
-import { ensureWorkshop, workshopScene, workshopPaper, bindWorkshop } from './evidence-workshop.js?v=20261105-workshop';
+import { typesetMath } from './math.js?v=20261105-school';
+import { ensureWorkshop, workshopScene, workshopPaper, bindWorkshop } from './evidence-workshop.js?v=20261105-school';
 
 const app = document.getElementById('app');
 const dialogRoot = document.getElementById('dialog-root');

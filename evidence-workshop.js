@@ -1,5 +1,5 @@
 import { portrait } from './characters.js?v=20261105';
-import { typesetMath } from './math.js?v=20261105-workshop';
+import { typesetMath } from './math.js?v=20261105-school';
 import { workshopGraph, workshopGraphMathCorpus } from './workshop-graph.js?v=20261105-workshop';
 
 const e = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
