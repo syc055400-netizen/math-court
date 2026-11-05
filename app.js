@@ -5,7 +5,8 @@ import { characterScene, portrait } from './characters.js?v=20261105';
 import { ensureHearing, hearingScene, hearingPaper, bindHearing } from './hearing.js?v=20261105';
 import { evidenceGraph } from './graphs.js?v=20261105-exam';
 import { enterCourt } from './entrance.js';
-import { typesetMath } from './math.js?v=20261105-exam';
+import { typesetMath } from './math.js?v=20261105-workshop';
+import { ensureWorkshop, workshopScene, workshopPaper, bindWorkshop } from './evidence-workshop.js?v=20261105-workshop';
 
 const app = document.getElementById('app');
 const dialogRoot = document.getElementById('dialog-root');
@@ -86,7 +87,7 @@ function showDialog(title,content,actions){
   dialogRoot.querySelectorAll('[data-dialog-action]').forEach(b=>b.addEventListener('click',()=>{const a=actions[Number(b.dataset.dialogAction)];close();a.action?.();}));
   dialogRoot.querySelector('[data-dialog-action]')?.focus();
 }
-function showHelp(){showDialog('진술을 듣고, 이의를 제기하세요',`<p>판사가 사건을 소개하면 상대측이 풀이를 한 줄씩 설명해요. <strong>처음 잘못된 진술</strong>에서 <strong>‘이의 있습니다!’</strong>를 눌러 주세요.</p><ol><li><strong>사건 소개</strong> — 판사가 알려 주는 조건과 주장을 확인해요.</li><li><strong>진술 청취</strong> — 한 줄씩 듣고, 처음 잘못된 부분에서 이의를 제기해요. 지나간 진술도 다시 볼 수 있어요.</li><li><strong>증거 제출</strong> — 판단의 이유와 조건에 맞는 증거를 확인해요.</li><li><strong>최종 변론</strong> — 논리를 정리하고 새로운 문제에도 적용해요.</li></ol><p>모든 진술이 타당하면 끝까지 들은 뒤 <strong>‘이의 없음’</strong>을 선택하세요. 틀려도 재도전은 무료예요.</p><p>정식 사건을 해결하면 <strong>30코인</strong>, 정확한 첫 판단으로 최대 <strong>20코인</strong>을 더 받아요. 누적 코인으로 새 단원과 심화 재판을 열 수 있어요.</p>`,[{label:'닫기'},{label:'튜토리얼 열기',primary:true,action:()=>startCase(tutorial.id,true)}]);}
+function showHelp(){showDialog('진술을 듣고, 이의를 제기하세요',`<p>판사가 사건을 소개하면 상대측이 풀이를 한 줄씩 설명해요. <strong>처음 잘못된 진술</strong>에서 <strong>‘이의 있습니다!’</strong>를 눌러 주세요.</p><ol><li><strong>사건 소개</strong> — 판사가 알려 주는 조건과 주장을 확인해요.</li><li><strong>진술 청취</strong> — 한 줄씩 듣고, 처음 잘못된 부분에서 이의를 제기해요. 지나간 진술도 다시 볼 수 있어요.</li><li><strong>증거 제출</strong> — 첫 연습에서는 그래프의 기울기를 조절해 반례를 만들고, 상대의 반박에 답해요. 정식 사건에서는 판단의 이유와 조건에 맞는 증거를 확인해요.</li><li><strong>최종 변론</strong> — 논리를 정리하고 새로운 문제에도 적용해요.</li></ol><p>모든 진술이 타당하면 끝까지 들은 뒤 <strong>‘이의 없음’</strong>을 선택하세요. 틀려도 재도전은 무료예요.</p><p>정식 사건을 해결하면 <strong>30코인</strong>, 정확한 첫 판단으로 최대 <strong>20코인</strong>을 더 받아요. 누적 코인으로 새 단원과 심화 재판을 열 수 있어요.</p>`,[{label:'닫기'},{label:'튜토리얼 열기',primary:true,action:()=>startCase(tutorial.id,true)}]);}
 
 function stagesFor(c){return c.id===tutorial.id?['error','evidence','repair']:['error','reason','evidence','counter','repair','transfer'];}
 function freshRun(c){return {id:c.id,stage:0,selection:null,cleared:false,firstAnswers:{},mistakes:{},finished:false,seed:Math.floor(Math.random()*2147483647)};}
@@ -111,7 +112,7 @@ function renderHome(){
   setScreen('title');document.title='오답법정 · 미적분Ⅰ';
   const count=completedCount();
   const resume=allCases.find(c=>c.id===state.lastCase&&validRun(c,state.runs[c.id])&&!state.runs[c.id].finished);
-  app.innerHTML=`<section class="title-screen" aria-labelledby="game-title"><div class="title-masthead"><small>미적분Ⅰ · 논리 추리 어드벤처</small><h1 id="game-title">오답법정</h1><p>그럴듯한 풀이, 숨겨진 모순.<br>이번 재판의 판단은 당신에게 달렸다.</p></div><div class="title-menu"><button class="btn primary" id="hero-start">${resume?'이어서 재판하기':state.tutorialDone?'다음 사건 시작':'재판 시작하기'}</button><button class="btn secondary" id="hero-tutorial">처음 배우기</button><button class="btn secondary" id="open-archive">사건 기록실 <span>${count} / ${cases.length}</span></button></div><div class="title-footer"><span>극한·연속 / 미분 / 적분</span><span>${resume?'진행 중인 재판이 저장되어 있어요.':'첫 재판은 서기와 함께하는 튜토리얼입니다.'}</span></div></section>`;
+  app.innerHTML=`<section class="title-screen" aria-labelledby="game-title"><div class="title-masthead"><small>미적분Ⅰ · 논리 추리 어드벤처</small><h1 id="game-title">오답법정</h1><p>그럴듯한 풀이, 숨겨진 모순.<br>이번 재판의 판단은 당신에게 달렸다.</p></div><div class="title-menu"><button class="btn primary" id="hero-start">${resume?'이어서 재판하기':state.tutorialDone?'다음 사건 시작':'재판 시작하기'}</button><button class="btn secondary" id="hero-tutorial">처음 배우기</button><button class="btn secondary" id="open-archive">사건 기록실 <span>${count} / ${cases.length}</span></button></div><div class="title-footer"><span>극한·연속 / 미분 / 적분</span><span>${resume?'진행 중인 재판이 저장되어 있어요.':'첫 재판에서 그래프를 조작해 증거를 만들어 보세요.'}</span></div></section>`;
   typesetMath(app);
   document.getElementById('hero-start').onclick=()=>startCase(resume?.id||(!state.tutorialDone?tutorial.id:nextAvailable().id));
   document.getElementById('hero-tutorial').onclick=()=>startCase(tutorial.id,true);
@@ -169,10 +170,28 @@ function renderHearingGame(c,run,stages){
   });
 }
 
+function renderWorkshopGame(c,run,stages){
+  const workshop=ensureWorkshop(run);
+  if(workshop.phase==='accepted'&&!run.cleared){run.cleared=true;if(!('evidence' in run.firstAnswers))run.firstAnswers.evidence=true;save();}
+  document.title=`증거 만들기 · ${c.title} · 오답법정`;
+  app.innerHTML=`<section class="game-view"><div class="game-topbar"><button type="button" class="back-link" id="back-home">← 사건 목록</button><div class="case-heading"><span class="eyebrow">첫 재판 · 직접 만드는 증거</span><h1>${e(c.title)}</h1></div><span class="practice-label">조절한 그래프도 자동 저장</span></div><div id="court-reaction">${workshopScene(run)}</div><nav class="stage-nav" aria-label="사건 진행 단계">${stages.map((key,i)=>`<span class="stage ${i===run.stage?'active':i<run.stage?'done':''}" ${i===run.stage?'aria-current="step"':''}><b>${String(i+1).padStart(2,'0')}</b> ${key==='evidence'?'증거 만들기':stageNames[key]}</span>`).join('')}</nav><div class="game-layout workshop-layout"><details class="workshop-case-record"><summary>사건 조건과 진술 다시 보기</summary>${dossier(c,run)}</details><section class="game-paper workshop-paper" aria-labelledby="question">${workshopPaper(run)}</section></div></section>`;
+  typesetMath(app);
+  document.getElementById('back-home').addEventListener('click',archive);
+  bindWorkshop(app,run,{
+    onSave:save,
+    onRender:()=>{save();renderGame(c);app.querySelector('.question')?.focus({preventScroll:true});},
+    onAttempt:correct=>{if(!correct){run.firstAnswers.evidence=false;run.mistakes.evidence=(run.mistakes.evidence||0)+1;playSound(false);}save();},
+    onComplete:()=>{if(!('evidence' in run.firstAnswers))run.firstAnswers.evidence=true;run.cleared=true;feedback=null;playSound(true);save();renderGame(c);app.querySelector('.question')?.focus({preventScroll:true});},
+    onAdvance:()=>{if(!run.cleared)return;run.stage++;run.selection=null;run.cleared=false;feedback=null;save();renderGame(c);app.querySelector('.question')?.focus({preventScroll:true});}
+  });
+}
+
 function renderGame(c){
   setScreen('game');
   const run=getRun(c),stages=stagesFor(c);if(run.stage>=stages.length||run.finished){finish(c,run);renderResult(c,run);return;}
   if(stages[run.stage]==='error'){renderHearingGame(c,run,stages);return;}
+  // Previously accepted evidence stays accepted; new and unfinished tutorials use the workshop.
+  if(c.id===tutorial.id&&stages[run.stage]==='evidence'&&(!run.cleared||run.workshop)){renderWorkshopGame(c,run,stages);return;}
   const key=stages[run.stage],s=getStage(c,key),isTutorial=c.id===tutorial.id;
   if(key!=='error'){
     let seed=(run.seed+run.stage*1013904223)>>>0;

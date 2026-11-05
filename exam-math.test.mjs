@@ -4,6 +4,7 @@ import { tutorial, cases } from './cases.js';
 import { advancedCases } from './advanced-cases.js';
 import { evidenceGraph } from './graphs.js';
 import { EXAM_MATH } from './exam-math-cache.js';
+import { workshopMathCorpus } from './evidence-workshop.js';
 
 test('every authored formula and graph label has exam-style vector output', () => {
   let count = 0;
@@ -19,6 +20,7 @@ test('every authored formula and graph label has exam-style vector output', () =
   }
   const all = [tutorial, ...cases, ...advancedCases];
   check(all);
+  check(workshopMathCorpus());
   for (const c of all) check(evidenceGraph(c.id).replaceAll('&gt;', '>').replaceAll('&lt;', '<').replaceAll('&amp;', '&').replaceAll('&#39;', "'").replaceAll('&quot;', '"'));
   assert.ok(count >= 429, 'The complete authored math corpus is checked');
 });

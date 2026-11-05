@@ -1,5 +1,5 @@
 /* Exam-paper typography inside the pixel game's reading surfaces. */
-@font-face{font-family:'Court Myeongjo';src:url('./court-myeongjo.woff') format('woff');font-display:swap;font-weight:400}
+@font-face{font-family:'Court Myeongjo';src:url('./court-myeongjo.woff?v=20261105-workshop') format('woff');font-display:swap;font-weight:400}
 :root{--exam-text:'Court Myeongjo','Batang','Noto Serif CJK KR','Times New Roman',serif}
 .condition-list,.claim-text,.record-steps li,.choice-body,.stage-quote,.opening-statement,.testimony-line p,.hearing-transcript .math,.takeaway p,.feedback,.exam-graph figcaption{font-family:var(--exam-text);font-weight:400;color:#171717;letter-spacing:0;word-break:keep-all}
 .condition-list{font-size:17px;line-height:1.95}.claim-text{font-size:16px;line-height:1.95}.record-steps li{font-size:15px;line-height:2}

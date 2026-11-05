@@ -1,5 +1,5 @@
 import renderMathInElement from './auto-render.mjs';
-import { EXAM_MATH } from './exam-math-cache.js?v=20261105-exam';
+import { EXAM_MATH } from './exam-math-cache.js?v=20261105-workshop';
 
 // Call after each screen update so choices, feedback and SVG labels stay typeset.
 export function typesetMath(root) {

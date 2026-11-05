@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { tutorial, cases } from './cases.js';
 import { advancedCases } from './advanced-cases.js';
 import { evidenceGraph } from './graphs.js';
+import { workshopMathCorpus } from './evidence-workshop.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const work=fs.mkdtempSync(path.join(os.tmpdir(),'court-exam-math-'));
@@ -20,6 +21,7 @@ function collect(value){
   }else if(value&&typeof value==='object')Object.values(value).forEach(collect);
 }
 collect([tutorial,...cases,...advancedCases]);
+collect(workshopMathCorpus());
 for(const c of [tutorial,...cases,...advancedCases])collect(evidenceGraph(c.id).replaceAll('&gt;','>').replaceAll('&lt;','<').replaceAll('&amp;','&').replaceAll('&#39;',"'").replaceAll('&quot;','"'));
 const entries=[...equations.entries()];
 const document=String.raw`\documentclass{article}

@@ -1,1 +1,1 @@
-{"name":"math-court","private":true,"type":"module","scripts":{"check":"node check.mjs && node --test progression.test.mjs hearing.test.mjs exam-math.test.mjs"}}
+{"name":"math-court","private":true,"type":"module","scripts":{"check":"node check.mjs && node --test progression.test.mjs hearing.test.mjs exam-math.test.mjs evidence-workshop.test.mjs"}}
